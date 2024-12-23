@@ -1,0 +1,11 @@
+[package]
+name = "whisper-services-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+axum = { version = "0.7" }
+tokio = { version = "1.0", features = ["full"] }
+ct2rs = { version = "0.9", features = ["whisper", "cuda", "cudnn"] }
+hound = "3.5"
