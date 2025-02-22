@@ -1,5 +1,5 @@
 use axum::{
-    extract::{DefaultBodyLimit, Multipart},
+    extract::{State, DefaultBodyLimit, Multipart},
     response::Html,
     routing::get,
     Json,
@@ -10,6 +10,11 @@ use tower_http::limit::RequestBodyLimitLayer;
 use serde::Serialize;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use whisper_trtllm_rs::Whisper;
+use std::sync::Arc;
+use tokio::io::{AsyncSeekExt, SeekFrom};
+use tokio_util::io::StreamReader;
+use bytes::Buf;
+use std::io::Cursor;
 
 #[derive(Serialize)]
 struct Detection {
@@ -31,14 +36,15 @@ async fn main() {
 
     // build our application with some routes
 
-    let whisper = Arc::new(Whisper::load("models/whisper_turbo_int8").unwrap());
+    let whisper = Arc::new(Whisper::load("models/turbo").unwrap());
 
     let app = Router::new()
         .route("/v1/audio/detections", get(show_form).post(accept_form))
         .layer(DefaultBodyLimit::disable())
         .layer(RequestBodyLimitLayer::new(
             1024 * 1024 * 1024, /* 1GB */
-        ));
+        ))
+        .with_state(whisper);
         //.layer(tower_http::trace::TraceLayer::new_for_http()
 
 
@@ -71,11 +77,19 @@ async fn show_form() -> Html<&'static str> {
     )
 }
 
-async fn accept_form(mut multipart: Multipart) -> Result<Json<Detection>, (StatusCode, String)> {
+async fn accept_form(State(whisper): State<Arc<Whisper>>, mut multipart: Multipart) -> Result<Json<Detection>, (StatusCode, String)> {
     while let Some(field) = multipart.next_field().await.map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))? {
         if let Some(name) = field.name() {
             if name == "file" {
-                let detection = Detection { language: "en".to_string() };
+                let mut file = field.bytes().await.map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
+                file.advance(44);
+                let reader = Cursor::new(file);
+
+                let language = whisper
+                    .detect_language(reader).await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                let detection = Detection { language };                
+
                 return Ok(Json(detection));
             }
         }

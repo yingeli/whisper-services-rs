@@ -12,3 +12,5 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = { version = "1.0", features = ["derive"] }
 whisper-trtllm-rs = { git = "https://github.com/yingeli/whisper-trtllm-rs.git" }
+tokio-util = { version = "0.7", features = ["io"] }
+bytes = "1.10"
