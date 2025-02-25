@@ -1,30 +1,28 @@
-FROM ygsea.azurecr.io/nvidia/trtllm:0.17.0-75
+FROM ygsea.azurecr.io/nvidia/trtllm:0.17.0-80
 
-#RUN apt-get update && apt-get install -y \
-#    curl \
-#    build-essential \
-#    git
+RUN apt-get update && apt-get install -y \
+    #libopenmpi-dev \
+    wget
 
-# install Rust
-#RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-#ENV PATH="/root/.cargo/bin:${PATH}"
+WORKDIR /app/whisper-services-rs
 
 # download engines
-#RUN mkdir -p /app/whisper-services-rs/models/turbo/encoder && \
-#    mkdir -p /app/whisper-services-rs/models/turbo/decoder && \
-#    curl -o /app/whisper-services-rs/models/turbo/mel_filters.npz https://raw.githubusercontent.com/openai/whisper/main/whisper/assets/mel_filters.npz && \
-#    curl -o /app/whisper-services-rs/models/turbo/tokenizer.json https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/tokenizer.json && \
-#    curl -o /app/whisper-services-rs/models/turbo/encoder/config.json https://ygpublic.blob.core.windows.net/whisper/engines/0.17/whisper_turbo_int8_t4_beam1_batch2/encoder/config.json && \
-#    curl -o /app/whisper-services-rs/models/turbo/encoder/rank0.engine https://ygpublic.blob.core.windows.net/whisper/engines/0.17/whisper_turbo_int8_t4_beam1_batch2/encoder/rank0.engine && \
-#    curl -o /app/whisper-services-rs/models/turbo/decoder/config.json https://ygpublic.blob.core.windows.net/whisper/engines/0.17/whisper_turbo_int8_t4_beam1_batch2/decoder/config.json && \
-#    curl -o /app/whisper-services-rs/models/turbo/decoder/rank0.engine https://ygpublic.blob.core.windows.net/whisper/engines/0.17/whisper_turbo_int8_t4_beam1_batch2/decoder/rank0.engine
+RUN mkdir -p models/turbo/encoder && \
+    mkdir -p models/turbo/decoder && \
+    wget -P models/turbo https://raw.githubusercontent.com/openai/whisper/main/whisper/assets/mel_filters.npz && \
+    wget -P models/turbo https://huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo/resolve/main/tokenizer.json && \
+    wget -P  models/turbo/encoder https://ygpub.blob.core.windows.net/whisper-services-rs/models/0.17.0/whisper_turbo_int8_a100_beam5_batch8/encoder/config.json && \
+    wget -P models/turbo/encoder https://ygpub.blob.core.windows.net/whisper-services-rs/models/0.17.0/whisper_turbo_int8_a100_beam5_batch8/encoder/rank0.engine && \
+    wget -P models/turbo/decoder https://ygpub.blob.core.windows.net/whisper-services-rs/models/0.17.0/whisper_turbo_int8_a100_beam5_batch8/decoder/config.json && \
+    wget -P models/turbo/decoder https://ygpub.blob.core.windows.net/whisper-services-rs/models/0.17.0/whisper_turbo_int8_a100_beam5_batch8/decoder/rank0.engine && \
+    wget https://ygpub.blob.core.windows.net/whisper-services-rs/whisper-services-rs && \
+    chmod +x whisper-services-rs
 
-#WORKDIR /app
-#RUN git clone https://github.com/yingeli/whisper-services-rs.git
+#ENV LD_LIBRARY_PATH=/opt/hpcx/ucx/lib:/usr/local/lib/python3.12/dist-packages/torch/lib:${LD_LIBRARY_PATH} \
+#    OPAL_PREFIX=/opt/hpcx/ompi
 
-#WORKDIR /app/whisper-services-rs
-#RUN cargo build --release
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.12/dist-packages/torch/lib:${LD_LIBRARY_PATH}
 
-#EXPOSE 3000
+EXPOSE 3000
 
-#CMD ["./target/release/whisper-services-rs"]
+CMD ["./whisper-services-rs"]
