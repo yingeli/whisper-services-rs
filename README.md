@@ -8,6 +8,8 @@ az storage blob upload-batch --account-name ygpub -d whisper-services-rs/models/
 
 wget -P /app/whisper-services-rs/audio https://ygpub.blob.core.windows.net/whisper-services-rs/audio/oppo-en-us.wav
 
+cargo update -p whisper-trtllm-rs
+
 curl https://speech.yglabs.eu.org/v1/audio/detections \
   -H "Content-Type: multipart/form-data" \
   -F file="@/audio/oppo-en-us.wav"
@@ -15,5 +17,10 @@ curl https://speech.yglabs.eu.org/v1/audio/detections \
 
 curl http://127.0.0.1:3000/v1/audio/detections \
   -H "Content-Type: multipart/form-data" \
-  -F file="@audio/oppo-en-us.wav"
+  -F file="@audio/oppo-en-us.wav" \
+  -v --trace-time
+
+curl http://127.0.0.1:3000/v1/audio/transcriptions \
+  -H "Content-Type: multipart/form-data" \
+  -F file="@audio/oppo-en-us.wav" \
   -v --trace-time
