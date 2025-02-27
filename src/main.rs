@@ -154,8 +154,12 @@ async fn transcribe(State(whisper): State<Arc<Whisper>>, mut multipart: Multipar
             },
             "file" => {
                 // Convert field into AsyncRead stream
-                let stream = field.into_stream().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
+                let stream = field.into_stream().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));         
                 let mut reader = StreamReader::new(stream);
+                //let time = std::time::Instant::now();
+                //let bytes = field.bytes().await.map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
+                //let mut reader = std::io::Cursor::new(bytes);
+                //println!("Read to Bytes: {}ms", time.elapsed().as_millis());
 
                 // Verify WAV header
                 let mut header = [0; 44];
@@ -176,9 +180,11 @@ async fn transcribe(State(whisper): State<Arc<Whisper>>, mut multipart: Multipar
                     return Err((StatusCode::BAD_REQUEST, "Only mono 16-bit 16kHz WAV files are supported".to_string()));
                 }
 
+                let prompt = "Hi,";
                 let transcript = whisper.clone()
-                    .transcribe(reader, language, None).await
+                    .transcribe(reader, language, Some(prompt.to_string())).await
                     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+                //println!("Transcribe: {}ms", time.elapsed().as_millis());
 
                 return Ok(Json(transcript));
             },
